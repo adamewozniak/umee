@@ -11,9 +11,6 @@ import (
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 	bech32ibckeeper "github.com/osmosis-labs/bech32-ibc/x/bech32ibc/keeper"
-	"github.com/umee-network/umee/v2/x/leverage"
-	leveragekeeper "github.com/umee-network/umee/v2/x/leverage/keeper"
-	leveragetypes "github.com/umee-network/umee/v2/x/leverage/types"
 	"github.com/umee-network/umee/v2/x/oracle"
 	oraclekeeper "github.com/umee-network/umee/v2/x/oracle/keeper"
 	oracletypes "github.com/umee-network/umee/v2/x/oracle/types"
@@ -24,7 +21,7 @@ import (
 func GetCalypsoUpgradeHandler(
 	mm *module.Manager, configurator *module.Configurator, accountKeeper *authkeeper.AccountKeeper,
 	bankKeeper *bankkeeper.BaseKeeper, bech32IbcKeeper *bech32ibckeeper.Keeper, distrKeeper *distrkeeper.Keeper,
-	mintKeeper *mintkeeper.Keeper, stakingKeeper *stakingkeeper.Keeper, leverageKeeper *leveragekeeper.Keeper,
+	mintKeeper *mintkeeper.Keeper, stakingKeeper *stakingkeeper.Keeper,
 	oracleKeeper *oraclekeeper.Keeper,
 ) func(
 	ctx sdk.Context, plan upgradetypes.Plan, vmap module.VersionMap,
@@ -41,9 +38,6 @@ func GetCalypsoUpgradeHandler(
 		if err != nil {
 			panic(sdkerrors.Wrap(err, "Calypso Upgrade: Unable to upgrade, bech32ibc module not initialized"))
 		}
-
-		vmap[leveragetypes.ModuleName] = leverage.AppModule{}.ConsensusVersion()
-		leverage.InitGenesis(ctx, *leverageKeeper, *leveragetypes.DefaultGenesis())
 
 		vmap[oracletypes.ModuleName] = oracle.AppModule{}.ConsensusVersion()
 		oracle.InitGenesis(ctx, *oracleKeeper, *oracletypes.DefaultGenesisState())

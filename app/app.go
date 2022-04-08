@@ -102,10 +102,6 @@ import (
 	"github.com/umee-network/umee/v2/app/upgrades/calypso"
 	uibctransfer "github.com/umee-network/umee/v2/x/ibctransfer"
 	uibctransferkeeper "github.com/umee-network/umee/v2/x/ibctransfer/keeper"
-	"github.com/umee-network/umee/v2/x/leverage"
-	leverageclient "github.com/umee-network/umee/v2/x/leverage/client"
-	leveragekeeper "github.com/umee-network/umee/v2/x/leverage/keeper"
-	leveragetypes "github.com/umee-network/umee/v2/x/leverage/types"
 	"github.com/umee-network/umee/v2/x/oracle"
 	oraclekeeper "github.com/umee-network/umee/v2/x/oracle/keeper"
 	oracletypes "github.com/umee-network/umee/v2/x/oracle/types"
@@ -158,7 +154,6 @@ var (
 		ibctransfer.AppModuleBasic{},
 		vesting.AppModuleBasic{},
 		gravity.AppModuleBasic{},
-		leverage.AppModuleBasic{},
 		oracle.AppModuleBasic{},
 		bech32ibc.AppModuleBasic{},
 	)
@@ -173,7 +168,6 @@ var (
 		govtypes.ModuleName:            {authtypes.Burner},
 		ibctransfertypes.ModuleName:    {authtypes.Minter, authtypes.Burner},
 		gravitytypes.ModuleName:        {authtypes.Minter, authtypes.Burner},
-		leveragetypes.ModuleName:       {authtypes.Minter, authtypes.Burner},
 		oracletypes.ModuleName:         nil,
 	}
 )
@@ -227,7 +221,6 @@ type UmeeApp struct {
 	FeeGrantKeeper   feegrantkeeper.Keeper
 	AuthzKeeper      authzkeeper.Keeper
 	GravityKeeper    gravitykeeper.Keeper
-	LeverageKeeper   leveragekeeper.Keeper
 	OracleKeeper     oraclekeeper.Keeper
 	bech32IbcKeeper  bech32ibckeeper.Keeper
 
@@ -271,7 +264,7 @@ func New(
 		govtypes.StoreKey, paramstypes.StoreKey, ibchost.StoreKey, upgradetypes.StoreKey,
 		evidencetypes.StoreKey, ibctransfertypes.StoreKey, capabilitytypes.StoreKey,
 		feegrant.StoreKey, authzkeeper.StoreKey, gravitytypes.StoreKey,
-		leveragetypes.StoreKey, oracletypes.StoreKey, bech32ibctypes.StoreKey,
+		oracletypes.StoreKey, bech32ibctypes.StoreKey,
 	)
 	transientKeys := sdk.NewTransientStoreKeys(paramstypes.TStoreKey)
 	memKeys := sdk.NewMemoryStoreKeys(capabilitytypes.MemStoreKey)
@@ -395,18 +388,6 @@ func New(
 		&app.StakingKeeper,
 		distrtypes.ModuleName,
 	)
-	app.LeverageKeeper = leveragekeeper.NewKeeper(
-		appCodec,
-		keys[leveragetypes.ModuleName],
-		app.GetSubspace(leveragetypes.ModuleName),
-		app.BankKeeper,
-		app.OracleKeeper,
-	)
-	app.LeverageKeeper = *app.LeverageKeeper.SetHooks(
-		leveragetypes.NewMultiHooks(
-			app.OracleKeeper.Hooks(),
-		),
-	)
 
 	app.IBCKeeper = ibckeeper.NewKeeper(
 		appCodec,
@@ -477,7 +458,6 @@ func New(
 		AddRoute(distrtypes.RouterKey, distr.NewCommunityPoolSpendProposalHandler(app.DistrKeeper)).
 		AddRoute(upgradetypes.RouterKey, upgrade.NewSoftwareUpgradeProposalHandler(app.UpgradeKeeper)).
 		AddRoute(ibcclienttypes.RouterKey, ibcclient.NewClientProposalHandler(app.IBCKeeper.ClientKeeper)).
-		AddRoute(leveragetypes.RouterKey, leverage.NewUpdateRegistryProposalHandler(app.LeverageKeeper)).
 		AddRoute(gravitytypes.RouterKey, gravitykeeper.NewGravityProposalHandler(app.GravityKeeper)).
 		AddRoute(bech32ibctypes.RouterKey, bech32ibc.NewBech32IBCProposalHandler(app.bech32IbcKeeper))
 
@@ -532,7 +512,6 @@ func New(
 		params.NewAppModule(app.ParamsKeeper),
 		transferModule,
 		gravity.NewAppModule(app.GravityKeeper, app.BankKeeper),
-		leverage.NewAppModule(appCodec, app.LeverageKeeper, app.AccountKeeper, app.BankKeeper),
 		oracle.NewAppModule(appCodec, app.OracleKeeper, app.AccountKeeper, app.BankKeeper),
 		bech32ibc.NewAppModule(appCodec, app.bech32IbcKeeper),
 	)
@@ -561,7 +540,6 @@ func New(
 		evidencetypes.ModuleName,
 		stakingtypes.ModuleName,
 		ibchost.ModuleName,
-		leveragetypes.ModuleName,
 		oracletypes.ModuleName,
 		gravitytypes.ModuleName,
 		bech32ibctypes.ModuleName,
@@ -583,7 +561,6 @@ func New(
 		minttypes.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
-		leveragetypes.ModuleName,
 		oracletypes.ModuleName,
 		feegrant.ModuleName,
 		authz.ModuleName,
@@ -618,7 +595,6 @@ func New(
 		authz.ModuleName,
 		feegrant.ModuleName,
 		oracletypes.ModuleName,
-		leveragetypes.ModuleName,
 		gravitytypes.ModuleName,
 		bech32ibctypes.ModuleName,
 	)
@@ -679,7 +655,7 @@ func New(
 
 	upgrades.RegisterUpgradeHandlers(
 		app.mm, app.configurator, &app.AccountKeeper, &baseBankKeeper, &app.bech32IbcKeeper, &app.DistrKeeper,
-		&app.MintKeeper, &app.StakingKeeper, &app.UpgradeKeeper, &app.LeverageKeeper, &app.OracleKeeper,
+		&app.MintKeeper, &app.StakingKeeper, &app.UpgradeKeeper, &app.OracleKeeper,
 	)
 
 	if loadLatest {
@@ -707,7 +683,6 @@ func (app *UmeeApp) registerStoreLoaders() {
 				Added: []string{
 					bech32ibctypes.ModuleName,
 					oracletypes.ModuleName,
-					leveragetypes.ModuleName,
 				}, // We are adding these modules
 				Renamed: nil,
 				Deleted: nil,
@@ -905,7 +880,6 @@ func initParamsKeeper(
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
 	paramsKeeper.Subspace(ibchost.ModuleName)
 	paramsKeeper.Subspace(gravitytypes.ModuleName)
-	paramsKeeper.Subspace(leveragetypes.ModuleName)
 	paramsKeeper.Subspace(oracletypes.ModuleName)
 
 	return paramsKeeper
@@ -917,7 +891,6 @@ func getGovProposalHandlers() []govclient.ProposalHandler {
 		distrclient.ProposalHandler,
 		upgradeclient.ProposalHandler,
 		upgradeclient.CancelProposalHandler,
-		leverageclient.ProposalHandler,
 	}
 }
 

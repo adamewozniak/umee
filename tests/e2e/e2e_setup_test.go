@@ -35,7 +35,6 @@ import (
 	rpchttp "github.com/tendermint/tendermint/rpc/client/http"
 
 	umeeapp "github.com/umee-network/umee/v2/app"
-	leveragetypes "github.com/umee-network/umee/v2/x/leverage/types"
 )
 
 const (
@@ -241,27 +240,6 @@ func (s *IntegrationTestSuite) initGenesis() {
 	s.Require().NoError(err)
 	appGenState[bech32ibctypes.ModuleName] = bz
 
-	var leverageGenState leveragetypes.GenesisState
-	s.Require().NoError(cdc.UnmarshalJSON(appGenState[leveragetypes.ModuleName], &leverageGenState))
-
-	leverageGenState.Registry = append(leverageGenState.Registry, leveragetypes.Token{
-		BaseDenom:            umeeapp.BondDenom,
-		SymbolDenom:          umeeapp.DisplayDenom,
-		Exponent:             6,
-		ReserveFactor:        sdk.MustNewDecFromStr("0.100000000000000000"),
-		CollateralWeight:     sdk.MustNewDecFromStr("0.050000000000000000"),
-		LiquidationThreshold: sdk.MustNewDecFromStr("0.050000000000000000"),
-		BaseBorrowRate:       sdk.MustNewDecFromStr("0.020000000000000000"),
-		KinkBorrowRate:       sdk.MustNewDecFromStr("0.200000000000000000"),
-		MaxBorrowRate:        sdk.MustNewDecFromStr("1.50000000000000000"),
-		KinkUtilizationRate:  sdk.MustNewDecFromStr("0.200000000000000000"),
-		LiquidationIncentive: sdk.MustNewDecFromStr("0.180000000000000000"),
-	})
-
-	bz, err = cdc.MarshalJSON(&leverageGenState)
-	s.Require().NoError(err)
-	appGenState[leveragetypes.ModuleName] = bz
-
 	var bankGenState banktypes.GenesisState
 	s.Require().NoError(cdc.UnmarshalJSON(appGenState[banktypes.ModuleName], &bankGenState))
 
@@ -428,7 +406,6 @@ func (s *IntegrationTestSuite) runGanacheContainer() {
 	// Wait for Ganache to start running.
 	s.Require().Eventually(
 		func() bool {
-
 			err := s.dkrPool.Client.Logs(
 				docker.LogsOptions{
 					Container:    s.ethResource.Container.ID,
@@ -585,7 +562,7 @@ func (s *IntegrationTestSuite) runGaiaNetwork() {
 	gaiaVal := s.chain.gaiaValidators[0]
 
 	gaiaCfgPath := path.Join(tmpDir, "cfg")
-	s.Require().NoError(os.MkdirAll(gaiaCfgPath, 0755))
+	s.Require().NoError(os.MkdirAll(gaiaCfgPath, 0o755))
 
 	_, err = copyFile(
 		filepath.Join("./scripts/", "gaia_bootstrap.sh"),
@@ -662,7 +639,7 @@ func (s *IntegrationTestSuite) runIBCRelayer() {
 	umeeVal := s.chain.validators[0]
 	hermesCfgPath := path.Join(tmpDir, "hermes")
 
-	s.Require().NoError(os.MkdirAll(hermesCfgPath, 0755))
+	s.Require().NoError(os.MkdirAll(hermesCfgPath, 0o755))
 	_, err = copyFile(
 		filepath.Join("./scripts/", "hermes_bootstrap.sh"),
 		filepath.Join(hermesCfgPath, "hermes_bootstrap.sh"),
@@ -922,7 +899,7 @@ func (s *IntegrationTestSuite) runPriceFeeder() {
 
 	priceFeederCfgPath := path.Join(tmpDir, "price-feeder")
 
-	s.Require().NoError(os.MkdirAll(priceFeederCfgPath, 0755))
+	s.Require().NoError(os.MkdirAll(priceFeederCfgPath, 0o755))
 	_, err = copyFile(
 		filepath.Join("./scripts/", "price_feeder_bootstrap.sh"),
 		filepath.Join(priceFeederCfgPath, "price_feeder_bootstrap.sh"),

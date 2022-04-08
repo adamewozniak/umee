@@ -6,8 +6,6 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"gopkg.in/yaml.v3"
-
-	"github.com/umee-network/umee/v2/x/leverage/types"
 )
 
 func NewAggregateExchangeRatePrevote(
@@ -15,7 +13,6 @@ func NewAggregateExchangeRatePrevote(
 	voter sdk.ValAddress,
 	submitBlock uint64,
 ) AggregateExchangeRatePrevote {
-
 	return AggregateExchangeRatePrevote{
 		Hash:        hash.String(),
 		Voter:       voter.String(),
@@ -33,7 +30,6 @@ func NewAggregateExchangeRateVote(
 	exchangeRateTuples ExchangeRateTuples,
 	voter sdk.ValAddress,
 ) AggregateExchangeRateVote {
-
 	return AggregateExchangeRateVote{
 		ExchangeRateTuples: exchangeRateTuples,
 		Voter:              voter.String(),
@@ -90,7 +86,7 @@ func ParseExchangeRateTuples(tuplesStr string) (ExchangeRateTuples, error) {
 			return nil, err
 		}
 		if !decCoin.IsPositive() {
-			return nil, types.ErrInvalidOraclePrice
+			return nil, fmt.Errorf("invalid price")
 		}
 
 		denom := strings.ToUpper(denomAmountStr[0])

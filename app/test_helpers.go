@@ -19,7 +19,6 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 
-	leveragetypes "github.com/umee-network/umee/v2/x/leverage/types"
 	oracletypes "github.com/umee-network/umee/v2/x/oracle/types"
 )
 
@@ -99,34 +98,6 @@ func IntegrationTestNetworkConfig() network.Config {
 	// Start with the default genesis state
 	appGenState := ModuleBasics.DefaultGenesis(encCfg.Marshaler)
 
-	// Extract the x/leverage part of the genesis state to be modified
-	var leverageGenState leveragetypes.GenesisState
-	if err := cdc.UnmarshalJSON(appGenState[leveragetypes.ModuleName], &leverageGenState); err != nil {
-		panic(err)
-	}
-
-	// Modify the x/leverage genesis state
-	leverageGenState.Registry = append(leverageGenState.Registry, leveragetypes.Token{
-		BaseDenom:            BondDenom,
-		SymbolDenom:          DisplayDenom,
-		Exponent:             6,
-		ReserveFactor:        sdk.MustNewDecFromStr("0.100000000000000000"),
-		CollateralWeight:     sdk.MustNewDecFromStr("0.050000000000000000"),
-		LiquidationThreshold: sdk.MustNewDecFromStr("0.050000000000000000"),
-		BaseBorrowRate:       sdk.MustNewDecFromStr("0.020000000000000000"),
-		KinkBorrowRate:       sdk.MustNewDecFromStr("0.200000000000000000"),
-		MaxBorrowRate:        sdk.MustNewDecFromStr("1.50000000000000000"),
-		KinkUtilizationRate:  sdk.MustNewDecFromStr("0.200000000000000000"),
-		LiquidationIncentive: sdk.MustNewDecFromStr("0.180000000000000000"),
-	})
-
-	// Marshal the modified state and add it back into appGenState
-	bz, err := cdc.MarshalJSON(&leverageGenState)
-	if err != nil {
-		panic(err)
-	}
-	appGenState[leveragetypes.ModuleName] = bz
-
 	var oracleGenState oracletypes.GenesisState
 	if err := cdc.UnmarshalJSON(appGenState[oracletypes.ModuleName], &oracleGenState); err != nil {
 		panic(err)
@@ -140,7 +111,7 @@ func IntegrationTestNetworkConfig() network.Config {
 		DisplayDenom, sdk.MustNewDecFromStr("34.21"),
 	))
 
-	bz, err = cdc.MarshalJSON(&oracleGenState)
+	bz, err := cdc.MarshalJSON(&oracleGenState)
 	if err != nil {
 		panic(err)
 	}
